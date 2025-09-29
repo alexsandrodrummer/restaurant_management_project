@@ -11,3 +11,15 @@ class MenuCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+class MenuItem(models.Model):
+    name = models.charField(max_length=150)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+    category = models.Foreignkey(MenuCategory, on_delete=models.PROTECT, related_name="items")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering = ("name",)
+        
+    def __str__(self):
+        return self.name
