@@ -11,6 +11,34 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin
 
 
+class StandardREsultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
+class MenuItemSearchViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """ 
+    GET /api/menu/items/search/?q=burger&page=1&page_size=10
+    Busca case-Insensitive por nome (name__icontains).
+
+    """
+
+
+    def get_queryset(self):
+        q = (self.request.query_params.get("q")or "").strip()
+        base_qs = MenuItem.objects.select_related("category").filter(is_active=True)
+        if not q:
+            return base_qs.none()
+        return base_qs.filter(Q(name__icontains))
+
+    def list(self, request, *args, **kwargs):
+        q= (request.query_params.get("q") or "").strip()
+        if not q:
+            return Response({"detail": "provide query paramenter 'q'."}, status=status.HTTP_400_BAD_REQUEST)
+        return super().list(request, *args, **kwargs)
+
+
 class MenuItemsByCategoryView(ListAPIView):
     serializer_class = MenuItemSerializer
     def get_queryset(self):
