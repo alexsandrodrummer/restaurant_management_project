@@ -1,4 +1,7 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+from decimal import Decimal
+
 
 class OrderStatus(models.Model):
     name = models.charField(max_length=50, unique=True)
@@ -40,3 +43,22 @@ class OrderItem(models.Model):
 
     def__str__(self):
         return f"{self.product_name} x{self.quantity}"
+
+
+
+class Coupon (models.Model):
+    code = models.CharField(max_length=50, unique=True, db_index=True)
+    #0.10 = 10% de desconto 
+    discount_percentage = models.DecimalField(
+        max_digits=5, decimal_places=4,
+        validator=[MinValueValidator(Decimal("0")), MaxValueValidator(decimal("1"))]
+    )
+    is_active = models.BooleanField(default=True)
+    valid_from = models.DateField()
+    valid_until = models.DataField()
+
+    class Meta:
+        ordering = ("-valid_from", "code")
+
+    def __str__(self):
+        return self.code
