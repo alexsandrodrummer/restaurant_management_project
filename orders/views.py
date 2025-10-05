@@ -4,6 +4,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Order
 from .serializers import OrderSerializer
 from .filters import OrderFilter
+from rest_framework.views import APIView
+from .models import Coupon
+
 
 class OrderListCreateView(generics.ListCreateAPIView):
     queryset = Order.objects.all().order_by("-created_at")
@@ -43,3 +46,32 @@ class OrderHistoryview(generics.ListCreateAPIView):
 #     search_fields = ["customer__name", "code"]   # pesquisa textual
 #     ordering_fields = ["created_at", "total"]    # ordenação via ?ordering=-total
 
+class CouponValidationView(APIView):
+    permission_classes = [AllowAny] #Ajuste se quiser restringir 
+
+    
+    def post(self, request):
+        code = (request.data.get("code") or"").strip()
+        if not code:
+            return Response({"detail": "Informe o campo 'code'."}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+        today = timezone.now().date()
+
+        coupon = (
+            Coupon.objects
+            .filter(code__iexact=code, is_active=True,
+            valid_from_lte=today, valid_until__gte=today)
+            .first()
+        )
+
+        if not coupon:
+            return Response({"detail": "Cupom inválido ou expirado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            "success": True,
+            "code": coupon.code,
+            "discount_percentage": str(coupon.discount_percentage), # ex.: "0.10"
+            "valid_from": coupon.valid_from.isoformat(),
+            "valid_until": coupon.valid_until.isoformat(),
+        }, status=status.HTTP_200_OK) 
